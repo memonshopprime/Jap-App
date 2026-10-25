@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenjin Reader - Japanese for Beginners</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ruby { ruby-position: over; }
+    rt { font-size: 0.65rem; color: #4f46e5; user-select: none; }
+    .card-flip { perspective: 1000px; }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.4s;
+      transform-style: preserve-3d;
+    }
+    .card-flipped { transform: rotateY(180deg); }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+    .card-back { transform: rotateY(180deg); }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans min-h-screen flex flex-col antialiased selection:bg-amber-100">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">天</div>
+        <div>
+          <h1 class="text-lg font-bold text-stone-900 leading-tight">Tenjin Lite</h1>
+          <p class="text-[11px] text-stone-500 font-medium">Bite-Sized Japanese Reader</p>
+        </div>
+      </div>
+      <nav class="flex items-center space-x-1 sm:space-x-2">
+        <button id="nav-reader" onclick="switchTab('reader')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition bg-indigo-50 text-indigo-700">Reader</button>
+        <button id="nav-kana" onclick="switchTab('kana')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-stone-900">Kana</button>
+        <button id="nav-srs" onclick="switchTab('srs')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-stone-900 flex items-center space-x-1">
+          <span>Flashcards</span>
+          <span id="deck-badge" class="ml-1 bg-stone-200 text-stone-700 text-xs px-1.5 py-0.5 rounded-full font-bold">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-4xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- TAB 1: READER -->
+    <section id="tab-reader" class="space-y-6">
+      <!-- Lesson Selector -->
+      <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Active Lesson</span>
+          <h2 id="lesson-title" class="text-base font-bold text-stone-800">1. Three Magic Words</h2>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="prevLesson()" class="p-2 border border-stone-200 rounded-lg hover:bg-stone-50 text-stone-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <select id="lesson-select" onchange="changeLesson(this.value)" class="text-sm border border-stone-200 rounded-lg px-2.5 py-1.5 bg-white font-medium text-stone-700 outline-none focus:border-indigo-500">
+            <option value="0">Lesson 1</option>
+            <option value="1">Lesson 2</option>
+            <option value="2">Lesson 3</option>
+            <option value="3">Lesson 4</option>
+          </select>
+          <button onclick="nextLesson()" class="p-2 border border-stone-200 rounded-lg hover:bg-stone-50 text-stone-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Control Toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-stone-100/70 p-3 rounded-lg border border-stone-200 text-xs">
+        <div class="flex items-center space-x-3">
+          <span class="font-semibold text-stone-600">Furigana:</span>
+          <label class="flex items-center space-x-1 cursor-pointer">
+            <input type="radio" name="furi" value="all" checked onchange="setFuriganaMode(this.value)" class="accent-indigo-600" />
+            <span>Show Always</span>
+          </label>
+          <label class="flex items-center space-x-1 cursor-pointer">
+            <input type="radio" name="furi" value="hover" onchange="setFuriganaMode(this.value)" class="accent-indigo-600" />
+            <span>On Hover/Tap</span>
+          </label>
+          <label class="flex items-center space-x-1 cursor-pointer">
+            <input type="radio" name="furi" value="none" onchange="setFuriganaMode(this.value)" class="accent-indigo-600" />
+            <span>Off</span>
+          </label>
+        </div>
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center space-x-1.5 cursor-pointer font-medium text-stone-700">
+            <input type="checkbox" id="romaji-toggle" onchange="toggleRomaji(this.checked)" class="accent-indigo-600 rounded" />
+            <span>Show Romaji</span>
+          </label>
+          <button onclick="playLessonAudio()" class="flex items-center space-x-1 bg-white border border-stone-300 hover:border-indigo-500 text-stone-700 hover:text-indigo-600 px-2.5 py-1 rounded-md transition shadow-xs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6 10H4a1 1 0 00-1 1v2a1 1 0 001 1h2l4 4V6l-4 4z"/></svg>
+            <span>Play All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Reading Card -->
+      <div class="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 shadow-sm relative">
+        <div class="mb-4 flex items-center justify-between border-b border-stone-100 pb-3">
+          <span class="text-xs font-semibold text-stone-400 uppercase tracking-widest">Tap any word to inspect</span>
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">JLPT N5 Beginner</span>
+        </div>
+
+        <!-- Japanese Text Display Area -->
+        <div id="passage-container" class="text-2xl sm:text-3xl leading-loose flex flex-wrap items-center gap-y-3 font-medium text-stone-800">
+          <!-- Static pre-render so it is never empty -->
+          <ruby onclick="selectWord({surface:'こんにちは',reading:'こんにちは',romaji:'konnichiwa',meaning:'Hello',pos:'Greeting'})" class="cursor-pointer hover:bg-amber-100 rounded px-1 inline-flex flex-col items-center mr-1">
+            <span>こんにちは</span>
+            <rt class="text-xs text-indigo-600">こんにちは</rt>
+          </ruby>
+          <span class="text-stone-400 select-none mr-2">！</span>
+          <ruby onclick="selectWord({surface:'ありがとう',reading:'ありがとう',romaji:'arigatou',meaning:'Thank you',pos:'Greeting'})" class="cursor-pointer hover:bg-amber-100 rounded px-1 inline-flex flex-col items-center mr-1">
+            <span>ありがとう</span>
+            <rt class="text-xs text-indigo-600">ありがとう</rt>
+          </ruby>
+          <span class="text-stone-400 select-none mr-2">。</span>
+          <ruby onclick="selectWord({surface:'すみません',reading:'すみません',romaji:'sumimasen',meaning:'Excuse me / Sorry',pos:'Greeting'})" class="cursor-pointer hover:bg-amber-100 rounded px-1 inline-flex flex-col items-center mr-1">
+            <span>すみません</span>
+            <rt class="text-xs text-indigo-600">すみません</rt>
+          </ruby>
+          <span class="text-stone-400 select-none mr-2">。</span>
+        </div>
+
+        <!-- Romaji Subtitle Display -->
+        <div id="romaji-container" class="mt-4 pt-3 border-t border-dashed border-stone-200 text-sm font-mono text-stone-500 hidden">
+          konnichiwa arigatou sumimasen
+        </div>
+
+        <!-- English Translation Accordion -->
+        <div class="mt-6 pt-4 border-t border-stone-100">
+          <details class="group cursor-pointer">
+            <summary class="text-xs font-semibold text-stone-500 hover:text-indigo-600 flex items-center space-x-1">
+              <span>English Translation</span>
+              <svg class="w-3.5 h-3.5 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <p id="lesson-translation" class="mt-2 text-stone-700 text-sm bg-stone-50 p-3 rounded-lg border border-stone-100">
+              Hello! Thank you. Excuse me.
+            </p>
+          </details>
+        </div>
+      </div>
+
+      <!-- Quick Word Breakdown / Dictionary Sheet -->
+      <div id="word-detail" class="hidden bg-stone-900 text-white p-4 rounded-xl shadow-lg border border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+        <div class="flex items-center space-x-3">
+          <button onclick="playTokenAudio(selectedToken.surface)" class="w-10 h-10 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white transition flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6 10H4a1 1 0 00-1 1v2a1 1 0 001 1h2l4 4V6l-4 4z"/></svg>
+          </button>
+          <div>
+            <div class="flex items-baseline space-x-2">
+              <span id="detail-surface" class="text-2xl font-bold"></span>
+              <span id="detail-reading" class="text-sm text-indigo-300 font-medium"></span>
+              <span id="detail-romaji" class="text-xs text-stone-400 font-mono"></span>
+            </div>
+            <p id="detail-meaning" class="text-sm text-stone-200 mt-0.5"></p>
+          </div>
+        </div>
+        <button id="add-srs-btn" onclick="addCurrentTokenToDeck()" class="flex items-center justify-center space-x-1.5 bg-white text-stone-900 hover:bg-stone-100 px-3.5 py-2 rounded-lg font-semibold text-xs transition">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+          <span>Save to Flashcards</span>
+        </button>
+      </div>
+
+      <!-- Lesson Grammar Note -->
+      <div class="bg-amber-50/70 border border-amber-200/80 p-4 rounded-xl text-xs text-amber-900">
+        <h4 class="font-bold flex items-center space-x-1 text-amber-950 mb-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Grammar Bite</span>
+        </h4>
+        <p id="lesson-grammar">Japanese conversations frequently start with standalone set phrases. You don't need full sentences or grammar rules yet!</p>
+      </div>
+    </section>
+
+    <!-- TAB 2: KANA CHARTS -->
+    <section id="tab-kana" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex space-x-1 border border-stone-200 bg-white p-1 rounded-lg">
+          <button id="kana-hira-btn" onclick="setKanaType('hiragana')" class="px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white">Hiragana</button>
+          <button id="kana-kata-btn" onclick="setKanaType('katakana')" class="px-4 py-1.5 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900">Katakana</button>
+        </div>
+        <p class="text-xs text-stone-500">Tap any character to hear it spoken.</p>
+      </div>
+      <div id="kana-grid" class="grid grid-cols-5 gap-2 sm:gap-3 bg-white p-4 sm:p-6 rounded-2xl border border-stone-200 shadow-xs">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: SRS FLASHCARDS -->
+    <section id="tab-srs" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-stone-900">Flashcard Review</h2>
+          <p class="text-xs text-stone-500">Spaced repetition for saved vocabulary</p>
+        </div>
+        <button onclick="clearDeck()" class="text-xs text-rose-500 hover:underline">Reset Saved Cards</button>
+      </div>
+
+      <div id="srs-empty-state" class="hidden bg-white p-12 text-center rounded-2xl border border-stone-200">
+        <svg class="w-10 h-10 text-stone-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <h3 class="font-bold text-stone-800">Your deck is empty</h3>
+        <p class="text-xs text-stone-500 mt-1 max-w-xs mx-auto">Click any word while reading a lesson and tap "Save to Flashcards" to review it here.</p>
+        <button onclick="switchTab('reader')" class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">Go to Reader</button>
+      </div>
+
+      <div id="srs-card-area" class="flex flex-col items-center">
+        <!-- 3D Flip Card -->
+        <div class="w-full max-w-sm h-64 card-flip cursor-pointer" onclick="flipCurrentCard()">
+          <div id="srs-card-inner" class="card-inner">
+            <!-- Front -->
+            <div class="card-front bg-white rounded-2xl border-2 border-stone-200 shadow-sm flex flex-col items-center justify-center p-6 text-center">
+              <span class="text-xs font-semibold uppercase text-stone-400 mb-2">Word / Kanji</span>
+              <span id="srs-front-surface" class="text-4xl font-bold text-stone-900"></span>
+              <button onclick="event.stopPropagation(); playTokenAudio(currentSrsCard.surface)" class="mt-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6 10H4a1 1 0 00-1 1v2a1 1 0 001 1h2l4 4V6l-4 4z"/></svg>
+              </button>
+              <span class="text-[11px] text-stone-400 mt-4">Tap card to flip</span>
+            </div>
+            <!-- Back -->
+            <div class="card-back bg-indigo-900 text-white rounded-2xl border-2 border-indigo-950 shadow-md flex flex-col items-center justify-center p-6 text-center">
+              <span id="srs-back-reading" class="text-2xl font-bold text-indigo-200"></span>
+              <span id="srs-back-romaji" class="text-sm font-mono text-indigo-300 mt-1"></span>
+              <p id="srs-back-meaning" class="text-base text-stone-100 font-medium mt-3"></p>
+              <span class="text-[10px] text-indigo-300 mt-4">Rate your recall below</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade Buttons -->
+        <div class="flex items-center space-x-2 mt-6 w-full max-w-sm">
+          <button onclick="gradeCard('again')" class="flex-1 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-lg text-xs font-bold transition">Again</button>
+          <button onclick="gradeCard('hard')" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-xs font-bold transition">Hard</button>
+          <button onclick="gradeCard('good')" class="flex-1 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-xs font-bold transition">Good</button>
+          <button onclick="gradeCard('easy')" class="flex-1 py-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-xs font-bold transition">Easy</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-stone-200 py-4 text-center text-xs text-stone-400">
+    Tenjin Lite • Assisted Immersion Reader for Japanese Learners
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-stone-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 z-50">
+    Card saved to deck!
+  </div>
+
+  <script>
+    const lessons = [
+      {
+        id: 1,
+        title: "1. Three Magic Words",
+        grammar: "Japanese conversations frequently start with standalone set phrases. You don't need full sentences or grammar rules yet!",
+        tokens: [
+          { surface: "こんにちは", reading: "こんにちは", romaji: "konnichiwa", meaning: "Hello", pos: "Greeting" },
+          { surface: "！", reading: "", romaji: "", meaning: "!", pos: "Punctuation" },
+          { surface: "ありがとう", reading: "ありがとう", romaji: "arigatou", meaning: "Thank you", pos: "Greeting" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" },
+          { surface: "すみません", reading: "すみません", romaji: "sumimasen", meaning: "Excuse me / Sorry", pos: "Greeting" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" }
+        ],
+        translation: "Hello! Thank you. Excuse me."
+      },
+      {
+        id: 2,
+        title: "2. Stating Your Name ([Name] + です)",
+        grammar: "In Japanese, you don't even have to say 'I'. Just say your name and add です (desu). The 'u' in 'desu' is almost silent.",
+        tokens: [
+          { surface: "ケン", reading: "ケン", romaji: "Ken", meaning: "Ken (Name)", pos: "Noun" },
+          { surface: "です", reading: "です", romaji: "desu", meaning: "am / is (polite)", pos: "Copula" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" },
+          { surface: "田中", reading: "たなか", romaji: "Tanaka", meaning: "Tanaka (Surname)", pos: "Noun" },
+          { surface: "です", reading: "です", romaji: "desu", meaning: "am / is (polite)", pos: "Copula" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" }
+        ],
+        translation: "I am Ken. I am Tanaka."
+      },
+      {
+        id: 3,
+        title: "3. Asking Questions ([Item] ですか)",
+        grammar: "To turn any sentence into a question in Japanese, simply add 'か' (ka) at the end! It acts like a verbal question mark.",
+        tokens: [
+          { surface: "学生", reading: "がくせい", romaji: "gakusei", meaning: "student", pos: "Noun" },
+          { surface: "です", reading: "です", romaji: "desu", meaning: "are / is", pos: "Copula" },
+          { surface: "か", reading: "か", romaji: "ka", meaning: "question particle (?)", pos: "Particle" },
+          { surface: "？", reading: "", romaji: "", meaning: "?", pos: "Punctuation" },
+          { surface: "はい", reading: "はい", romaji: "hai", meaning: "yes", pos: "Interjection" },
+          { surface: "、", reading: "", romaji: ",", meaning: ",", pos: "Punctuation" },
+          { surface: "学生", reading: "がくせい", romaji: "gakusei", meaning: "student", pos: "Noun" },
+          { surface: "です", reading: "です", romaji: "desu", meaning: "am / is", pos: "Copula" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" }
+        ],
+        translation: "Are you a student? Yes, I am a student."
+      },
+      {
+        id: 4,
+        title: "4. The Topic Marker は (I am...)",
+        grammar: "When you want to emphasize the topic (e.g. 'Speaking of me...'), attach the particle は (written 'ha', but pronounced 'wa').",
+        tokens: [
+          { surface: "私", reading: "わたし", romaji: "watashi", meaning: "I / me", pos: "Pronoun" },
+          { surface: "は", reading: "は", romaji: "wa", meaning: "topic particle", pos: "Particle" },
+          { surface: "カナダ人", reading: "カナダじん", romaji: "kanadajin", meaning: "Canadian person", pos: "Noun" },
+          { surface: "です", reading: "です", romaji: "desu", meaning: "am / is", pos: "Copula" },
+          { surface: "。", reading: "", romaji: "", meaning: ".", pos: "Punctuation" }
+        ],
+        translation: "I am Canadian."
+      }
+    ];
+
+    const hiraganaData = [
+      { k: "あ", r: "a" }, { k: "い", r: "i" }, { k: "う", r: "u" }, { k: "え", r: "e" }, { k: "お", r: "o" },
+      { k: "か", r: "ka" }, { k: "き", r: "ki" }, { k: "く", r: "ku" }, { k: "け", r: "ke" }, { k: "こ", r: "ko" },
+      { k: "さ", r: "sa" }, { k: "し", r: "shi" }, { k: "す", r: "su" }, { k: "せ", r: "se" }, { k: "そ", r: "so" },
+      { k: "た", r: "ta" }, { k: "ち", r: "chi" }, { k: "つ", r: "tsu" }, { k: "て", r: "te" }, { k: "と", r: "to" },
+      { k: "な", r: "na" }, { k: "に", r: "ni" }, { k: "ぬ", r: "nu" }, { k: "ね", r: "ne" }, { k: "ノ", r: "no" },
+      { k: "は", r: "ha" }, { k: "ひ", r: "hi" }, { k: "ふ", r: "fu" }, { k: "へ", r: "he" }, { k: "ほ", r: "ho" },
+      { k: "ま", r: "ma" }, { k: "み", r: "mi" }, { k: "む", r: "mu" }, { k: "め", r: "me" }, { k: "も", r: "mo" },
+      { k: "や", r: "ya" }, { k: "", r: "" },   { k: "ゆ", r: "yu" }, { k: "", r: "" },   { k: "よ", r: "yo" },
+      { k: "ら", r: "ra" }, { k: "り", r: "ri" }, { k: "る", r: "ru" }, { k: "れ", r: "re" }, { k: "ろ", r: "ro" },
+      { k: "わ", r: "wa" }, { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" },   { k: "を", r: "wo" },
+      { k: "ん", r: "n" },  { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" }
+    ];
+
+    const katakanaData = [
+      { k: "ア", r: "a" }, { k: "イ", r: "i" }, { k: "ウ", r: "u" }, { k: "エ", r: "e" }, { k: "オ", r: "o" },
+      { k: "カ", r: "ka" }, { k: "キ", r: "ki" }, { k: "ク", r: "ku" }, { k: "ケ", r: "ke" }, { k: "コ", r: "ko" },
+      { k: "サ", r: "sa" }, { k: "シ", r: "shi" }, { k: "ス", r: "su" }, { k: "セ", r: "se" }, { k: "ソ", r: "so" },
+      { k: "タ", r: "ta" }, { k: "チ", r: "chi" }, { k: "ツ", r: "tsu" }, { k: "テ", r: "te" }, { k: "ト", r: "to" },
+      { k: "ナ", r: "na" }, { k: "ニ", r: "ni" }, { k: "ヌ", r: "nu" }, { k: "ネ", r: "ne" }, { k: "ノ", r: "no" },
+      { k: "ハ", r: "ha" }, { k: "ヒ", r: "hi" }, { k: "フ", r: "fu" }, { k: "ヘ", r: "he" }, { k: "ホ", r: "ho" },
+      { k: "マ", r: "ma" }, { k: "ミ", r: "mi" }, { k: "ム", r: "mu" }, { k: "メ", r: "me" }, { k: "モ", r: "mo" },
+      { k: "ヤ", r: "ya" }, { k: "", r: "" },   { k: "ユ", r: "yu" }, { k: "", r: "" },   { k: "ヨ", r: "yo" },
+      { k: "ラ", r: "ra" }, { k: "リ", r: "ri" }, { k: "る", r: "ru" }, { k: "レ", r: "re" }, { k: "ロ", r: "ro" },
+      { k: "ワ", r: "wa" }, { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" },   { k: "ヲ", r: "wo" },
+      { k: "ン", r: "n" },  { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" },   { k: "", r: "" }
+    ];
+
+    let currentLessonIdx = 0;
+    let furiganaMode = "all";
+    let showRomaji = false;
+    let selectedToken = null;
+    let currentKanaType = 'hiragana';
+    let srsDeck = JSON.parse(localStorage.getItem('tenjin_srs_deck') || '[]');
+    let currentSrsIndex = 0;
+    let isFlipped = false;
+
+    // Run immediately when loaded
+    function init() {
+      populateLessonSelect();
+      renderCurrentLesson();
+      renderKanaChart();
+      updateDeckBadge();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    function populateLessonSelect() {
+      const select = document.getElementById('lesson-select');
+      select.innerHTML = '';
+      lessons.forEach((l, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `Lesson ${idx + 1}`;
+        select.appendChild(opt);
+      });
+      select.value = currentLessonIdx;
+    }
+
+    function renderCurrentLesson() {
+      const lesson = lessons[currentLessonIdx];
+      document.getElementById('lesson-title').textContent = lesson.title;
+      document.getElementById('lesson-grammar').textContent = lesson.grammar;
+      document.getElementById('lesson-translation').textContent = lesson.translation;
+      document.getElementById('lesson-select').value = currentLessonIdx;
+
+      const container = document.getElementById('passage-container');
+      const romajiContainer = document.getElementById('romaji-container');
+      container.innerHTML = '';
+      romajiContainer.innerHTML = '';
+
+      let romajiSentence = [];
+
+      lesson.tokens.forEach((token) => {
+        if (token.pos === "Punctuation") {
+          const punct = document.createElement('span');
+          punct.textContent = token.surface;
+          punct.className = "text-stone-400 select-none mr-2";
+          container.appendChild(punct);
+        } else {
+          const ruby = document.createElement('ruby');
+          ruby.className = "cursor-pointer hover:bg-amber-100 rounded px-1 transition-colors group relative inline-flex flex-col items-center mr-1";
+          ruby.onclick = () => selectWord(token);
+
+          const textSpan = document.createElement('span');
+          textSpan.textContent = token.surface;
+
+          const rt = document.createElement('rt');
+          rt.textContent = token.reading;
+          if (furiganaMode === 'none') {
+            rt.style.display = 'none';
+          } else if (furiganaMode === 'hover') {
+            rt.className = "text-xs text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity";
+          } else {
+            rt.className = "text-xs text-indigo-600 opacity-100";
+          }
+
+          ruby.appendChild(textSpan);
+          ruby.appendChild(rt);
+          container.appendChild(ruby);
+
+          if (token.romaji) romajiSentence.push(token.romaji);
+        }
+      });
+
+      romajiContainer.textContent = romajiSentence.join(' ');
+      document.getElementById('word-detail').classList.add('hidden');
+    }
+
+    function selectWord(token) {
+      selectedToken = token;
+      document.getElementById('detail-surface').textContent = token.surface;
+      document.getElementById('detail-reading').textContent = token.reading ? `[${token.reading}]` : '';
+      document.getElementById('detail-romaji').textContent = token.romaji;
+      document.getElementById('detail-meaning').textContent = `${token.meaning} (${token.pos})`;
+      document.getElementById('word-detail').classList.remove('hidden');
+      playTokenAudio(token.surface);
+    }
+
+    function setFuriganaMode(mode) {
+      furiganaMode = mode;
+      renderCurrentLesson();
+    }
+
+    function toggleRomaji(checked) {
+      showRomaji = checked;
+      const el = document.getElementById('romaji-container');
+      if (checked) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+
+    function prevLesson() {
+      if (currentLessonIdx > 0) {
+        currentLessonIdx--;
+        renderCurrentLesson();
+      }
+    }
+
+    function nextLesson() {
+      if (currentLessonIdx < lessons.length - 1) {
+        currentLessonIdx++;
+        renderCurrentLesson();
+      }
+    }
+
+    function changeLesson(val) {
+      currentLessonIdx = parseInt(val, 10);
+      renderCurrentLesson();
+    }
+
+    function playTokenAudio(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP';
+      u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+    }
+
+    function playLessonAudio() {
+      const lesson = lessons[currentLessonIdx];
+      const fullText = lesson.tokens.map(t => t.surface).join('');
+      playTokenAudio(fullText);
+    }
+
+    function setKanaType(type) {
+      currentKanaType = type;
+      if (type === 'hiragana') {
+        document.getElementById('kana-hira-btn').className = "px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white";
+        document.getElementById('kana-kata-btn').className = "px-4 py-1.5 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900";
+      } else {
+        document.getElementById('kana-kata-btn').className = "px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white";
+        document.getElementById('kana-hira-btn').className = "px-4 py-1.5 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900";
+      }
+      renderKanaChart();
+    }
+
+    function renderKanaChart() {
+      const grid = document.getElementById('kana-grid');
+      grid.innerHTML = '';
+      const list = currentKanaType === 'hiragana' ? hiraganaData : katakanaData;
+
+      list.forEach(item => {
+        if (!item.k) {
+          const blank = document.createElement('div');
+          blank.className = "h-14 sm:h-16 rounded-xl bg-stone-50/50";
+          grid.appendChild(blank);
+          return;
+        }
+
+        const btn = document.createElement('button');
+        btn.onclick = () => playTokenAudio(item.k);
+        btn.className = "h-14 sm:h-16 rounded-xl border border-stone-200 hover:border-indigo-500 hover:bg-indigo-50/50 flex flex-col items-center justify-center transition shadow-2xs group";
+        
+        const kSpan = document.createElement('span');
+        kSpan.className = "text-lg sm:text-xl font-bold text-stone-800 group-hover:text-indigo-600";
+        kSpan.textContent = item.k;
+
+        const rSpan = document.createElement('span');
+        rSpan.className = "text-[10px] text-stone-400 font-mono";
+        rSpan.textContent = item.r;
+
+        btn.appendChild(kSpan);
+        btn.appendChild(rSpan);
+        grid.appendChild(btn);
+      });
+    }
+
+    function addCurrentTokenToDeck() {
+      if (!selectedToken) return;
+      const exists = srsDeck.some(card => card.surface === selectedToken.surface);
+      if (exists) {
+        showToast("Word is already in your deck!");
+        return;
+      }
+
+      srsDeck.push({
+        surface: selectedToken.surface,
+        reading: selectedToken.reading,
+        romaji: selectedToken.romaji,
+        meaning: selectedToken.meaning
+      });
+
+      localStorage.setItem('ten
